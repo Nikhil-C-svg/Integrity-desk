@@ -1,0 +1,5 @@
+/build/
+/*.exe
+/demo-files/
+/*.baseline
+/demo-report.html
