@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrity Desk</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#101315; --panel:#171c1e; --line:#313b3d; --text:#edf4ee;
+  --muted:#acbab6; --mint:#9af5c9; --amber:#ffd080; --red:#ffaba3; --blue:#a7c9ff;
+  --mono:"Cascadia Mono",Consolas,monospace;
+}
+* { box-sizing:border-box }
+body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 system-ui,sans-serif }
+header { border-bottom:1px solid var(--line) }
+.bar,main { max-width:1160px; margin:auto; padding-inline:28px }
+.bar { min-height:68px; display:flex; align-items:center; justify-content:space-between; gap:12px }
+.brand { display:flex; align-items:center; gap:11px; font-weight:700; letter-spacing:.02em }
+.logo { display:grid; place-items:center; width:32px; height:32px; border-radius:9px; background:var(--mint); color:#142521; font:700 17px var(--mono) }
+#source { color:var(--muted); border:1px solid var(--line); border-radius:20px; padding:5px 12px; font:12px var(--mono) }
+main { padding-top:38px; padding-bottom:48px }
+.hero { padding:36px; border:1px solid #344741; border-radius:17px; background:radial-gradient(ellipse at 95% 10%,#29483c 0%,transparent 48%),linear-gradient(118deg,#182923,#191e1e 72%) }
+h1 { font-size:clamp(39px,6vw,70px); line-height:1.02; letter-spacing:-.065em; margin:9px 0 12px }
+p { color:var(--muted); margin:0 }
+.metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:16px 0 28px }
+.metric { border:1px solid var(--line); border-radius:12px; padding:15px 18px; background:var(--panel) }
+.metric span { display:block; color:var(--muted); font-size:13px }
+.metric strong { display:block; font:700 32px var(--mono); margin-top:4px }
+.Modified { color:var(--amber) } .Removed { color:var(--red) } .Added { color:var(--blue) } .Unchanged { color:var(--mint) }
+.panel { border:1px solid var(--line); border-radius:15px; background:var(--panel); overflow:hidden }
+.panel-head { padding:20px; display:flex; align-items:end; justify-content:space-between; gap:12px; flex-wrap:wrap }
+h2 { font-size:22px; margin:0; line-height:1.2; letter-spacing:-.035em }
+label { display:flex; gap:5px; flex-direction:column; color:var(--muted); font-size:12px }
+.controls { display:flex; flex-wrap:wrap; gap:8px }
+input,select,button { border:1px solid var(--line); border-radius:8px; background:#111617; color:var(--text); font:inherit; padding:7px 10px }
+input { width:min(210px,100%) }
+button { cursor:pointer; font-size:13px }
+button:hover { border-color:var(--mint) }
+:focus-visible { outline:2px solid var(--mint); outline-offset:2px }
+.scroll { overflow-x:auto }
+table { width:100%; border-collapse:collapse; text-align:left }
+th,td { padding:12px 20px; border-top:1px solid var(--line) }
+th { color:var(--muted); font-size:12px; background:#141819 }
+td:nth-child(2), th:nth-child(2) { width:130px }
+td:last-child, th:last-child { width:115px; text-align:right }
+code { font:13px var(--mono); overflow-wrap:anywhere }
+.status { display:inline-block; border:1px solid var(--line); border-radius:30px; padding:3px 9px; font-size:12px; font-weight:650 }
+#summary { margin:12px 2px 0; font-size:13px }
+dialog { width:min(560px,calc(100% - 32px)); border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--panel); color:var(--text) }
+dialog::backdrop { background:#070a0bcc }
+dialog dt { font-size:13px; color:var(--muted); margin-top:10px }
+dialog dd { margin:0 }
+form { display:flex; justify-content:flex-end }
+@media(max-width:630px) {
+  .bar,main { padding-inline:14px } main { padding-top:18px }
+  .hero { padding:22px } .metrics { grid-template-columns:repeat(2,1fr) }
+  th,td { padding:10px } .panel-head { padding:14px }
+}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand"><span class="logo" aria-hidden="true">#</span> Integrity Desk</div>
+  <span id="source">Sample audit</span>
+</div></header>
+<main>
+  <section class="hero" aria-labelledby="title">
+    <h1 id="title">File integrity report</h1>
+    <p>Review file changes by comparing SHA-256 hashes with a saved baseline.</p>
+  </section>
+  <section class="metrics" aria-label="Audit totals">
+    <div class="metric"><span>Files reviewed</span><strong id="total">&mdash;</strong></div>
+    <div class="metric"><span>Modified</span><strong id="modified" class="Modified">&mdash;</strong></div>
+    <div class="metric"><span>Added</span><strong id="added" class="Added">&mdash;</strong></div>
+    <div class="metric"><span>Removed</span><strong id="removed" class="Removed">&mdash;</strong></div>
+  </section>
+  <section class="panel" aria-labelledby="findings">
+    <div class="panel-head">
+      <h2 id="findings">File findings</h2>
+      <div class="controls">
+        <label>Search file paths<input id="query" type="search" placeholder="e.g. config/"></label>
+        <label>Filter by status<select id="filter">
+          <option>All statuses</option><option>Modified</option><option>Added</option><option>Removed</option><option>Unchanged</option>
+        </select></label>
+      </div>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th scope="col">File path</th><th scope="col">Status</th><th scope="col">Evidence</th></tr></thead>
+      <tbody id="findings-list"></tbody>
+    </table></div>
+  </section>
+  <p id="summary" role="status"></p>
+  <noscript><p>Enable JavaScript to view and filter audit findings.</p></noscript>
+</main>
+<dialog id="details" aria-labelledby="details-title">
+  <h2 id="details-title">SHA-256 evidence</h2>
+  <p><code id="detail-name"></code></p>
+  <dl>
+    <dt>Baseline fingerprint</dt><dd><code id="old-hash"></code></dd>
+    <dt>Current fingerprint</dt><dd><code id="new-hash"></code></dd>
+  </dl>
+  <form method="dialog"><button>Close</button></form>
+</dialog>
+<script id="audit-data" type="application/json">{"sample":true,"rows":[["config/access.ini","Modified","ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad","2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"],["logs/archive.log","Removed","e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",""],["logs/review.log","Added","","9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"],["config/policy.ini","Unchanged","ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb","ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"],["README.txt","Unchanged","b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9","b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"]]}</script>
+<script>
+'use strict';
+const get = id => document.getElementById(id);
+const report = JSON.parse(get('audit-data').textContent);
+const order = ['Modified', 'Removed', 'Added', 'Unchanged'];
+const files = [...report.rows].sort((left, right) =>
+  order.indexOf(left[1]) - order.indexOf(right[1]) || left[0].localeCompare(right[0]));
+const counts = Object.fromEntries(order.map(status => [status, 0]));
+for (const [, status] of files) counts[status]++;
+get('source').textContent = report.sample ? 'Sample audit' : 'Local audit';
+get('total').textContent = files.length;
+for (const status of ['Modified', 'Added', 'Removed']) {
+  get(status.toLowerCase()).textContent = counts[status];
+}
+
+function showEvidence(name, oldHash, newHash) {
+  get('detail-name').textContent = name;
+  get('old-hash').textContent = oldHash || 'File absent';
+  get('new-hash').textContent = newHash || 'File absent';
+  get('details').showModal();
+}
+
+function renderFindings() {
+  const query = get('query').value.trim().toLowerCase();
+  const status = get('filter').value;
+  const matches = files.filter(([name, kind]) =>
+    name.toLowerCase().includes(query) && (status === 'All statuses' || status === kind));
+  const body = get('findings-list');
+  body.replaceChildren();
+  for (const [name, kind, oldHash, newHash] of matches) {
+    const row = body.insertRow();
+    const path = document.createElement('code');
+    path.textContent = name;
+    row.insertCell().append(path);
+    const flag = document.createElement('span');
+    flag.classList.add('status', kind);
+    flag.textContent = kind;
+    row.insertCell().append(flag);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'View';
+    button.setAttribute('aria-label', 'View SHA-256 evidence for ' + name);
+    button.addEventListener('click', () => showEvidence(name, oldHash, newHash));
+    row.insertCell().append(button);
+  }
+  if (matches.length === 0) {
+    const empty = body.insertRow().insertCell();
+    empty.colSpan = 3;
+    empty.style.textAlign = 'left';
+    empty.textContent = files.length ? 'No files match these filters.' : 'No files in the baseline or scan.';
+  }
+  get('summary').textContent = 'Showing ' + matches.length + ' of ' + files.length +
+    ' files. ' + counts.Unchanged + ' unchanged in this audit.';
+}
+
+get('query').addEventListener('input', renderFindings);
+get('filter').addEventListener('change', renderFindings);
+renderFindings();
+</script>
+</body>
+</html>
+                                                                                   
